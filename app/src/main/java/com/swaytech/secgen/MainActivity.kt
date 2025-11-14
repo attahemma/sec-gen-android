@@ -1,6 +1,7 @@
 package com.swaytech.secgen
 
 import android.Manifest
+import android.app.Activity
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
@@ -52,19 +53,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ScreenLockLandscape
 import androidx.compose.material.icons.filled.ScreenLockPortrait
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.toArgb
 import coil.compose.rememberAsyncImagePainter
 import kotlinx.parcelize.Parcelize
 import androidx.compose.ui.platform.LocalView
@@ -87,7 +93,22 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+fun SetSystemBarColor(color: Color) {
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = color.toArgb()
+            // You can also change the navigation bar color here if needed
+            // window.navigationBarColor = color.toArgb()
+        }
+    }
+}
+
+@Composable
 fun AppNavigation() {
+    // Set the status bar color to black for the entire app
+    SetSystemBarColor(color = Color.Black)
     var screen by rememberSaveable { mutableStateOf("splash") }
     var showIntro by rememberSaveable { mutableStateOf<Boolean?>(null) }
 
@@ -164,176 +185,24 @@ fun PermissionAndMediaScreen() {
     }
 
     if (hasPermission) {
-        MediaFileListScreen()
+        // Show the new home screen with bottom navigation (audio / video)
+        MediaHomeScreen()
     } else {
-        Text("Permission required to access media files.")
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Permission required to access media files.")
+        }
     }
 }
 
-//@Composable
-//fun MediaFileListScreen() {
-//    val context = LocalContext.current
-//    var mediaFiles by remember { mutableStateOf(listOf<MediaFile>()) }
-//    var selectedFile by rememberSaveable { mutableStateOf<MediaFile?>(null) }
-//
-//    LaunchedEffect(Unit) {
-//        mediaFiles = getMediaFiles(context.contentResolver)
-//    }
-//
-//    if (selectedFile != null) {
-//        MediaPlayerScreen(
-//            file = selectedFile!!,
-//            allFiles = mediaFiles,
-//            onClose = { selectedFile = null }
-//        )
-//    } else if (mediaFiles.isEmpty()) {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .padding(32.dp),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-//                Icon(
-//                    imageVector = Icons.Default.VideoLibrary,
-//                    contentDescription = "No media",
-//                    tint = Color(0xFFBDBDBD),
-//                    modifier = Modifier.size(72.dp)
-//                )
-//                Spacer(modifier = Modifier.height(24.dp))
-//                Text(
-//                    text = "No media files found",
-//                    style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
-//                    textAlign = TextAlign.Center
-//                )
-//                Spacer(modifier = Modifier.height(8.dp))
-//                Text(
-//                    text = "Your audio and video files will appear here once available.",
-//                    style = MaterialTheme.typography.body2.copy(color = Color(0xFF757575)),
-//                    textAlign = TextAlign.Center
-//                )
-//            }
-//        }
-//    } else {
-//        LazyColumn(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .padding(horizontal = 16.dp, vertical = 12.dp),
-//            verticalArrangement = Arrangement.spacedBy(12.dp)
-//        ) {
-//            items(mediaFiles) { file ->
-//                Box(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .clip(RoundedCornerShape(20.dp))
-//                        .background(Color(0xFFFFF9C4))
-//                        .clickable { selectedFile = file }
-//                        .padding(12.dp)
-//                ) {
-//                    Row(
-//                        modifier = Modifier
-//                            .fillMaxWidth(),
-//                        verticalAlignment = Alignment.CenterVertically,
-//                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-//                    ) {
-//                        // Thumbnail
-//                        if (file.type == "Video" && file.thumbnailUri != null) {
-//                            Image(
-//                                painter = rememberAsyncImagePainter(
-//                                    model = file.thumbnailUri,
-//                                    placeholder = painterResource(R.drawable.media_placeholder),
-//                                    error = painterResource(R.drawable.error_placeholder)
-//                                ),
-//                                contentDescription = null,
-//                                modifier = Modifier
-//                                    .size(56.dp)
-//                                    .clip(RoundedCornerShape(12.dp)),
-//                                contentScale = ContentScale.Crop
-//                            )
-//                        } else {
-//                            Box(
-//                                modifier = Modifier
-//                                    .size(56.dp)
-//                                    .clip(RoundedCornerShape(12.dp))
-//                                    .background(Color(0xFFE3F2FD)),
-//                                contentAlignment = Alignment.Center
-//                            ) {
-//                                Icon(
-//                                    imageVector = Icons.Default.Audiotrack,
-//                                    contentDescription = "Audio",
-//                                    tint = Color(0xFF1B5E20),
-//                                    modifier = Modifier.size(32.dp)
-//                                )
-//                            }
-//                        }
-//
-//                        // Title and type
-//                        Column(modifier = Modifier.weight(1f)) {
-//                            Text(
-//                                text = file.displayName.substringBeforeLast('.'),
-//                                style = TextStyle(
-//                                    fontSize = 16.sp,
-//                                    fontWeight = FontWeight.SemiBold,
-//                                    color = Color(0xFF4A148C)
-//                                ),
-//                                maxLines = 1,
-//                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-//                            )
-//                            Spacer(modifier = Modifier.height(4.dp))
-//                            Box(
-//                                modifier = Modifier
-//                                    .clip(RoundedCornerShape(6.dp))
-//                                    .background(Color(0xFF1E88E5))
-//                                    .padding(horizontal = 8.dp, vertical = 3.dp)
-//                            ) {
-//                                Text(
-//                                    text = file.type,
-//                                    style = TextStyle(
-//                                        color = Color.White,
-//                                        fontSize = 12.sp,
-//                                        fontWeight = FontWeight.Bold
-//                                    )
-//                                )
-//                            }
-//                        }
-//
-//                        // Play button
-//                        Box(
-//                            modifier = Modifier
-//                                .size(44.dp)
-//                                .clip(RoundedCornerShape(10.dp))
-//                                .background(
-//                                    brush = Brush
-//                                        .linearGradient(
-//                                            listOf(
-//                                                Color(0xFF1E88E5),
-//                                                Color(0xFF00BCD4),
-//                                                Color(0xFF26A69A)
-//                                            )
-//                                        ),
-//                                    shape = RoundedCornerShape(10.dp)
-//                                ),
-//                            contentAlignment = Alignment.Center
-//                        ) {
-//                            Icon(
-//                                imageVector = Icons.Default.PlayArrow,
-//                                contentDescription = "Play",
-//                                tint = Color.White,
-//                                modifier = Modifier.size(24.dp)
-//                            )
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
-
+// Replace the previous MediaFileListScreen implementation with a Home screen
+// that exposes audio and video lists via bottom navigation.
 @Composable
-fun MediaFileListScreen() {
+fun MediaHomeScreen() {
     val context = LocalContext.current
     var mediaFiles by remember { mutableStateOf(listOf<MediaFile>()) }
     var selectedFile by rememberSaveable { mutableStateOf<MediaFile?>(null) }
+    var selectedTab by rememberSaveable { mutableStateOf("audio") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         mediaFiles = getMediaFiles(context.contentResolver)
@@ -345,7 +214,101 @@ fun MediaFileListScreen() {
             allFiles = mediaFiles,
             onClose = { selectedFile = null }
         )
-    } else if (mediaFiles.isEmpty()) {
+        return
+    }
+
+    Scaffold(
+        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars),
+        topBar = {
+            TopAppBar(
+                backgroundColor = Color.White,
+                elevation = 4.dp
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    placeholder = { Text("Search audio or video...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear Search")
+                            }
+                        }
+                    },
+                    colors = TextFieldDefaults.textFieldColors(
+                        backgroundColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    singleLine = true
+                )
+            }
+        },
+        bottomBar = {
+            val gradientBrush = Brush.verticalGradient(
+                colors = listOf(Color(0xFF81D4FA), Color(0xFF0288D1))
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(gradientBrush)
+            ) {
+                BottomNavigation(
+                    backgroundColor = Color.Transparent,
+                    elevation = 0.dp
+                ) {
+                    BottomNavigationItem(
+                        icon = { Icon(Icons.Default.Audiotrack, contentDescription = "Audio") },
+                        label = { Text("Audio") },
+                        selected = selectedTab == "audio",
+                        onClick = { selectedTab = "audio" },
+                        selectedContentColor = Color.White,
+                        // CORRECTED PARAMETER NAME:
+                        unselectedContentColor = Color.White.copy(alpha = 0.7f)
+                    )
+                    BottomNavigationItem(
+                        icon = { Icon(Icons.Default.VideoLibrary, contentDescription = "Video") },
+                        label = { Text("Video") },
+                        selected = selectedTab == "video",
+                        onClick = { selectedTab = "video" },
+                        selectedContentColor = Color.White,
+                        // CORRECTED PARAMETER NAME:
+                        unselectedContentColor = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+    ) { innerPadding ->
+        val filteredAudioFiles = remember(mediaFiles, searchQuery) {
+            mediaFiles
+                .filter { it.type == "Audio" }
+                .filter { it.displayName.contains(searchQuery, ignoreCase = true) }
+        }
+
+        val filteredVideoFiles = remember(mediaFiles, searchQuery) {
+            mediaFiles
+                .filter { it.type == "Video" }
+                .filter { it.displayName.contains(searchQuery, ignoreCase = true) }
+        }
+
+        Box(modifier = Modifier.padding(innerPadding)) {
+            when (selectedTab) {
+                "audio" -> AudioListScreen(mediaFiles = filteredAudioFiles, onSelect = { selectedFile = it })
+                "video" -> VideoListScreen(mediaFiles = filteredVideoFiles, onSelect = { selectedFile = it })
+            }
+        }
+    }
+}
+
+@Composable
+fun AudioListScreen(mediaFiles: List<MediaFile>, onSelect: (MediaFile) -> Unit) {
+    val audioFiles = mediaFiles.filter { it.type == "Audio" }
+
+    if (audioFiles.isEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -353,136 +316,173 @@ fun MediaFileListScreen() {
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Default.VideoLibrary,
-                    contentDescription = "No media",
-                    tint = Color(0xFFBDBDBD),
-                    modifier = Modifier.size(72.dp)
-                )
-                Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    text = "No media files found",
+                    text = "No audio files found",
                     style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Your audio and video files will appear here once available.",
+                    text = "Your audio files will appear here once available.",
                     style = MaterialTheme.typography.body2.copy(color = Color(0xFF757575)),
                     textAlign = TextAlign.Center
                 )
             }
         }
-    } else {
-        LazyColumn(
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(audioFiles) { file ->
+            MediaListItem(file = file, onClick = { onSelect(file) })
+        }
+    }
+}
+
+@Composable
+fun VideoListScreen(mediaFiles: List<MediaFile>, onSelect: (MediaFile) -> Unit) {
+    val videoFiles = mediaFiles.filter { it.type == "Video" }
+
+    if (videoFiles.isEmpty()) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
         ) {
-            items(mediaFiles) { file ->
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "No video files found",
+                    style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Your video files will appear here once available.",
+                    style = MaterialTheme.typography.body2.copy(color = Color(0xFF757575)),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(videoFiles) { file ->
+            MediaListItem(file = file, onClick = { onSelect(file) })
+        }
+    }
+}
+
+@Composable
+fun MediaListItem(file: MediaFile, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFFFFF9C4))
+            .clickable { onClick() }
+            .padding(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Thumbnail or audio icon
+            if (file.type == "Video" && file.thumbnailUri != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = file.thumbnailUri),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFFFFF9C4))
-                        .clickable { selectedFile = file }
-                        .padding(12.dp)
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFE3F2FD)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Thumbnail
-                        if (file.type == "Video" && file.thumbnailUri != null) {
-                            Image(
-                                painter = rememberAsyncImagePainter(
-                                    model = file.thumbnailUri,
-                                    placeholder = painterResource(R.drawable.media_placeholder),
-                                    error = painterResource(R.drawable.error_placeholder)
-                                ),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFFE3F2FD)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Audiotrack,
-                                    contentDescription = "Audio",
-                                    tint = Color(0xFF1B5E20),
-                                    modifier = Modifier.size(32.dp)
-                                )
-                            }
-                        }
-
-                        // Title and type
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = file.displayName.substringBeforeLast('.'),
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF4A148C)
-                                ),
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFF1E88E5))
-                                    .padding(horizontal = 8.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = file.type,
-                                    style = TextStyle(
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                            }
-                        }
-
-                        // Play button
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    brush = Brush
-                                        .linearGradient(
-                                            listOf(
-                                                Color(0xFF1E88E5),
-                                                Color(0xFF00BCD4),
-                                                Color(0xFF26A69A)
-                                            )
-                                        ),
-                                    shape = RoundedCornerShape(10.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = "Play",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Audiotrack,
+                        contentDescription = "Audio",
+                        tint = Color(0xFF1B5E20),
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
+            }
+
+            // Title and type
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = file.displayName.substringBeforeLast('.'),
+                    style = TextStyle(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF4A148C)
+                    ),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            if (file.type == "Video") Color(0xFF1E88E5) else Color(0xFF6A1B9A)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = if (file.type == "Video") "Video" else "Audio",
+                        style = TextStyle(
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+            }
+
+            // Play button
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(
+                        brush = Brush
+                            .linearGradient(
+                                listOf(
+                                    Color(0xFF1E88E5),
+                                    Color(0xFF00BCD4),
+                                    Color(0xFF26A69A)
+                                )
+                            ),
+                        shape = RoundedCornerShape(10.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Play",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
     }
@@ -675,16 +675,15 @@ fun MediaPlayerScreen(file: MediaFile, allFiles: List<MediaFile>, onClose: () ->
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)) // Semi-transparent overlay for blur effect
+                        .background(Color.White) // Semi-transparent overlay for blur effect
                 ) {
                     Image(
                         painter = rememberAsyncImagePainter(
-                            model = currentFile.thumbnailUri,
+                            model = currentFile.thumbnailUri ?: "",
                         ),
                         contentDescription = null,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .alpha(0.5f), // Lower opacity to simulate blur
+                            .fillMaxSize(), // Lower opacity to simulate blur
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -715,9 +714,7 @@ fun MediaPlayerScreen(file: MediaFile, allFiles: List<MediaFile>, onClose: () ->
                     ) {
                         Image(
                             painter = rememberAsyncImagePainter(
-                                model = currentFile.thumbnailUri ?: R.drawable.media_placeholder,
-                                placeholder = painterResource(R.drawable.media_placeholder),
-                                error = painterResource(R.drawable.error_placeholder)
+                                model = currentFile.thumbnailUri ?: "",
                             ),
                             contentDescription = null,
                             modifier = Modifier
@@ -942,4 +939,3 @@ fun DefaultPreview() {
         PermissionAndMediaScreen()
     }
 }
-
