@@ -53,12 +53,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ScreenLockLandscape
 import androidx.compose.material.icons.filled.ScreenLockPortrait
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -200,6 +202,7 @@ fun MediaHomeScreen() {
     var mediaFiles by remember { mutableStateOf(listOf<MediaFile>()) }
     var selectedFile by rememberSaveable { mutableStateOf<MediaFile?>(null) }
     var selectedTab by rememberSaveable { mutableStateOf("audio") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         mediaFiles = getMediaFiles(context.contentResolver)
@@ -216,20 +219,47 @@ fun MediaHomeScreen() {
 
     Scaffold(
         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars),
+        topBar = {
+            TopAppBar(
+                backgroundColor = Color.White,
+                elevation = 4.dp
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    placeholder = { Text("Search audio or video...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear Search")
+                            }
+                        }
+                    },
+                    colors = TextFieldDefaults.textFieldColors(
+                        backgroundColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    singleLine = true
+                )
+            }
+        },
         bottomBar = {
-            // Apply a gradient background to the BottomNavigation
             val gradientBrush = Brush.verticalGradient(
                 colors = listOf(Color(0xFF81D4FA), Color(0xFF0288D1))
             )
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(gradientBrush)
             ) {
                 BottomNavigation(
-                    backgroundColor = Color.Transparent, // Make default background transparent
-                    elevation = 0.dp // Remove the shadow
+                    backgroundColor = Color.Transparent,
+                    elevation = 0.dp
                 ) {
                     BottomNavigationItem(
                         icon = { Icon(Icons.Default.Audiotrack, contentDescription = "Audio") },
@@ -237,7 +267,8 @@ fun MediaHomeScreen() {
                         selected = selectedTab == "audio",
                         onClick = { selectedTab = "audio" },
                         selectedContentColor = Color.White,
-                        unselectedContentColor = Color.White.copy(alpha = 0.7f) // Adjust alpha for unselected
+                        // CORRECTED PARAMETER NAME:
+                        unselectedContentColor = Color.White.copy(alpha = 0.7f)
                     )
                     BottomNavigationItem(
                         icon = { Icon(Icons.Default.VideoLibrary, contentDescription = "Video") },
@@ -245,16 +276,29 @@ fun MediaHomeScreen() {
                         selected = selectedTab == "video",
                         onClick = { selectedTab = "video" },
                         selectedContentColor = Color.White,
-                        unselectedContentColor = Color.White.copy(alpha = 0.7f) // Adjust alpha for unselected
+                        // CORRECTED PARAMETER NAME:
+                        unselectedContentColor = Color.White.copy(alpha = 0.7f)
                     )
                 }
             }
         }
     ) { innerPadding ->
+        val filteredAudioFiles = remember(mediaFiles, searchQuery) {
+            mediaFiles
+                .filter { it.type == "Audio" }
+                .filter { it.displayName.contains(searchQuery, ignoreCase = true) }
+        }
+
+        val filteredVideoFiles = remember(mediaFiles, searchQuery) {
+            mediaFiles
+                .filter { it.type == "Video" }
+                .filter { it.displayName.contains(searchQuery, ignoreCase = true) }
+        }
+
         Box(modifier = Modifier.padding(innerPadding)) {
             when (selectedTab) {
-                "audio" -> AudioListScreen(mediaFiles = mediaFiles, onSelect = { selectedFile = it })
-                "video" -> VideoListScreen(mediaFiles = mediaFiles, onSelect = { selectedFile = it })
+                "audio" -> AudioListScreen(mediaFiles = filteredAudioFiles, onSelect = { selectedFile = it })
+                "video" -> VideoListScreen(mediaFiles = filteredVideoFiles, onSelect = { selectedFile = it })
             }
         }
     }
